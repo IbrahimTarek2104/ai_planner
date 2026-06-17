@@ -9,24 +9,43 @@ import pydeck as pdk
 from pipeline.network import AttentionUNet
 from pipeline.data_pipeline import ProductionInferencePipeline
 import os
-import urllib.request
+import requests
 
 # Put this near the top of your app.py file, right under your imports
 MODEL_PATH = "models/unet_best.pth"
-# Replace with your actual direct download link from Step 2
-# Updated with a confirm token to force Google Drive to bypass the large file webpage
-DIRECT_DOWNLOAD_URL = "https://drive.google.com/uc?export=download&id=1aM1V2q5OO1DWa05aFiv6giPKFQ4UVKCJ&confirm=t"
+FILE_ID = "1aM1V2q5OO1DWa05aFiv6giPKFQ4UVKCJ"
 
 @st.cache_resource
-def download_model_weights_if_missing():
+def download_large_google_drive_file():
     os.makedirs("models", exist_ok=True)
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("Downloading trained model weights from secure cloud storage (this happens only once)..."):
-            urllib.request.urlretrieve(DIRECT_DOWNLOAD_URL, MODEL_PATH)
+        with st.spinner("📥 Streaming trained model weights from Google Drive (bypassing size warnings)..."):
+            session = requests.Session()
+            URL = "https://docs.google.com/uc?export=download"
+            
+            # Step 1: Send an initial request to catch the confirmation token
+            response = session.get(URL, params={'id': FILE_ID}, stream=True)
+            
+            token = None
+            for key, value in response.cookies.items():
+                if key.startswith('download_warning'):
+                    token = value
+                    break
+            
+            # Step 2: If a token exists, append it to bypass the warning page
+            if token:
+                response = session.get(URL, params={'id': FILE_ID, 'confirm': token}, stream=True)
+            
+            # Step 3: Stream the true binary file chunks directly to disk
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in response.iter_content(chunk_size=32768):
+                    if chunk:
+                        f.write(chunk)
+                        
     return MODEL_PATH
 
-# Run the download helper before loading the model layout
-download_model_weights_if_missing()
+# Run this robust downloader block
+download_large_google_drive_file()
 
 # ==========================================
 # Page Config & Core Layout Initialization

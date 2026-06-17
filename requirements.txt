@@ -6,3 +6,4 @@ scipy
 pandas
 pydeck
 opencv-python-headless
+requests
