@@ -14,7 +14,8 @@ import urllib.request
 # Put this near the top of your app.py file, right under your imports
 MODEL_PATH = "models/unet_best.pth"
 # Replace with your actual direct download link from Step 2
-DIRECT_DOWNLOAD_URL = "https://drive.google.com/uc?export=download&id=1aM1V2q5OO1DWa05aFiv6giPKFQ4UVKCJ"
+# Updated with a confirm token to force Google Drive to bypass the large file webpage
+DIRECT_DOWNLOAD_URL = "https://drive.google.com/uc?export=download&id=1aM1V2q5OO1DWa05aFiv6giPKFQ4UVKCJ&confirm=t"
 
 @st.cache_resource
 def download_model_weights_if_missing():
@@ -37,9 +38,13 @@ st.write("---")
 pipeline = ProductionInferencePipeline(patch_size=64)
 
 @st.cache_resource
+@st.cache_resource
 def load_model():
     model = AttentionUNet(in_channels=3, base=64, drop=0.2)
-    state_dict = torch.load("models/unet_best.pth", map_location=torch.device('cpu'))
+    
+    # ADD weights_only=False inside the torch.load function right here:
+    state_dict = torch.load("models/unet_best.pth", map_location=torch.device('cpu'), weights_only=False)
+    
     model.load_state_dict(state_dict, strict=False)
     model.eval()
     return model
