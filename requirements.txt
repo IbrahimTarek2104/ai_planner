@@ -1,0 +1,8 @@
+streamlit
+rasterio
+torch
+numpy
+scipy
+pandas
+pydeck
+opencv-python-headless
